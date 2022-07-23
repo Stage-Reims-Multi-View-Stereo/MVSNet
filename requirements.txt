@@ -1,3 +1,6 @@
+# Sans cette ligne il installe une version trop récente de grpcio qui n'est pas compatible avec Python 2
+grpcio==1.19.0
+
 tensorflow-gpu==1.14
 progressbar2>=3.0
 numpy>=1.13
