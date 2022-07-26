@@ -570,7 +570,7 @@ def gen_pipeline_mvs_list(dense_folder):
             if use_png_images:
                 view_image_path = os.path.join(image_folder, ('%08d.png' % view_index))
             else:   
-                ref_image_path = os.path.join(image_folder, ('%08d.jpg' % ref_index))
+                view_image_path = os.path.join(image_folder, ('%08d.jpg' % view_index))
              
             view_cam_path = os.path.join(cam_folder, ('%08d_cam.txt' % view_index))
             paths.append(view_image_path)
