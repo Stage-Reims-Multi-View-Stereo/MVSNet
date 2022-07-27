@@ -182,6 +182,9 @@ def write_cam(file, cam):
     f.close()
 
 def load_depth_packed_png(filename):
+
+    print("\033[1;35m[DEBUG] Loading disparity map: '" + str(filename) + "'...\033[0m")
+
     # Fonction readPacked() du disparity_reader.py
     tmp = cv2.imread(filename, -1)
 
@@ -230,6 +233,10 @@ def load_pfm(file):
     return data
 
 def write_pfm(file, image, scale=1):
+
+
+    print("\033[1;35m[DEBUG] Writing PFM image: '" + file + "'...\033[0m")
+
     file = file_io.FileIO(file, mode='wb')
     color = None
 
