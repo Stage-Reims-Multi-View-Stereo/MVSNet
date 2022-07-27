@@ -23,6 +23,8 @@ from preprocess import *
 from model import *
 from loss import *
 
+import preprocess
+
 # params for datasets
 tf.app.flags.DEFINE_string('blendedmvs_data_root', '/data/BlendedMVS/dataset_low_res', 
                            """Path to dtu dataset.""")
@@ -88,7 +90,13 @@ class MVSGenerator:
                     cam[1, 3, 2] = FLAGS.max_d
                     images.append(image)
                     cams.append(cam)
-                depth_image = load_pfm(open(data[2 * self.view_num]))
+                
+                print(data[2 * self.view_num])
+                
+                if preprocess.MVSNET_USE_PACKED_PNG_NOT_PFM:
+                    depth_image = load_depth_packed_png(data[2 * self.view_num])
+                else:
+                    depth_image = load_pfm(open(data[2 * self.view_num]))
 
                 if FLAGS.validate_set == 'eth3d':
                     # crop to fit the network
@@ -148,6 +156,7 @@ def validate_mvsnet(mvs_list):
     # image normalization
     normalized_images = []
     for view in range(0, FLAGS.view_num):
+        print(images)
         image = tf.squeeze(tf.slice(images, [0, view, 0, 0, 0], [-1, 1, -1, -1, 3]), axis=1)
         image = tf.image.per_image_standardization(image)
         normalized_images.append(image)

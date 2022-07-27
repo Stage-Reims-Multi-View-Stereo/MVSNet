@@ -24,6 +24,13 @@ import urllib
 from tensorflow.python.lib.io import file_io
 FLAGS = tf.app.flags.FLAGS
 
+MVSNET_USE_PACKED_PNG_NOT_PFM = (os.environ.get("MVSNET_USE_PACKED_PNG_NOT_PFM") == "1")
+
+# MODIF: lire les .png si les .jpg ne sont pas trouvés
+# car les images du dataset de Théo sont en .png
+MVSNET_USE_PNG_TEST_IMAGES = os.environ.get("MVSNET_USE_PNG_TEST_IMAGES") == "1"
+mvsnet_rgb_extension = "png" if MVSNET_USE_PNG_TEST_IMAGES else "jpg"
+
 def center_image(img):
     """ normalize image input """
     img = img.astype(np.float32)
@@ -174,6 +181,22 @@ def write_cam(file, cam):
 
     f.close()
 
+def load_depth_packed_png(filename):
+    # Fonction readPacked() du disparity_reader.py
+    tmp = cv2.imread(filename, -1)
+
+    try:
+        # print(path)
+        b, g, r, a = cv2.split(tmp)
+
+    except:
+        print(path)
+        exit(1)
+
+    res = r + g / 256.0 + b / (256.0 * 256.0) + a / (256.0 * 256.0 * 256.0)
+
+    return 32 * res
+
 def load_pfm(file):
     color = None
     width = None
@@ -314,7 +337,10 @@ def gen_dtu_resized_path(dtu_data_folder, mode='training'):
                     paths.append(view_image_path)
                     paths.append(view_cam_path)
                 # depth path
+                
                 depth_image_path = os.path.join(depth_folder, ('depth_map_%04d.pfm' % ref_index))
+
+
                 paths.append(depth_image_path)
                 sample_list.append(paths)
 
@@ -437,21 +463,29 @@ def gen_blendedmvs_path(blendedmvs_data_folder, mode='training_mvs'):
             if total_view_num < FLAGS.view_num - 1:
                 continue
             paths = []
-            ref_image_path = os.path.join(dataset_folder, 'blended_images', '%08d_masked.jpg' % ref_idx)
-            ref_depth_path = os.path.join(dataset_folder, 'rendered_depth_maps', '%08d.pfm' % ref_idx)
+            ref_image_path = os.path.join(dataset_folder, 'blended_images', '%08d_masked.%s' % (ref_idx, mvsnet_rgb_extension))
+
+            if MVSNET_USE_PACKED_PNG_NOT_PFM:
+                ref_depth_path = os.path.join(dataset_folder, 'rendered_depth_maps', '%08d.png' % ref_idx)
+            else:
+                ref_depth_path = os.path.join(dataset_folder, 'rendered_depth_maps', '%08d.pfm' % ref_idx)
+            
             ref_cam_path = os.path.join(dataset_folder, 'cams', '%08d_cam.txt' % ref_idx)
             paths.append(ref_image_path)
             paths.append(ref_cam_path)
 
             for cidx in range(0, FLAGS.view_num - 1):
                 view_idx = int(cluster_info[2 * cidx + 1])
-                view_image_path = os.path.join(dataset_folder, 'blended_images', '%08d_masked.jpg' % view_idx)
+                view_image_path = os.path.join(dataset_folder, 'blended_images', '%08d_masked.%s' % (view_idx, mvsnet_rgb_extension))
                 view_cam_path = os.path.join(dataset_folder, 'cams', '%08d_cam.txt' % view_idx)
                 paths.append(view_image_path)
                 paths.append(view_cam_path)
             paths.append(ref_depth_path)
 
             mvs_input_list.append(paths)
+
+    # for i, x in enumerate(mvs_input_list):
+    #     print(i, ": ", x)
 
     return mvs_input_list
 
@@ -546,15 +580,7 @@ def gen_pipeline_mvs_list(dense_folder):
         # ref image
         ref_index = int(cluster_list[pos])
         pos += 1
-
-        # MODIF: lire les .png si les .jpg ne sont pas trouvés
-        # car les images du dataset de Théo sont en .png
-        use_png_images = os.environ.get("MVSNET_USE_PNG_IMAGES") == "1"
-        
-        if use_png_images:
-            ref_image_path = os.path.join(image_folder, ('%08d.png' % ref_index))
-        else:
-            ref_image_path = os.path.join(image_folder, ('%08d.jpg' % ref_index))
+        ref_image_path = os.path.join(image_folder, ('%08d.%s' % (ref_index, mvsnet_rgb_extension)))
             
 
         ref_cam_path = os.path.join(cam_folder, ('%08d_cam.txt' % ref_index))
@@ -567,10 +593,7 @@ def gen_pipeline_mvs_list(dense_folder):
         for view in range(check_view_num):
             view_index = int(cluster_list[pos + 2 * view])
             
-            if use_png_images:
-                view_image_path = os.path.join(image_folder, ('%08d.png' % view_index))
-            else:   
-                view_image_path = os.path.join(image_folder, ('%08d.jpg' % view_index))
+            view_image_path = os.path.join(image_folder, ('%08d.%s' % (view_index, mvsnet_rgb_extension)))
              
             view_cam_path = os.path.join(cam_folder, ('%08d_cam.txt' % view_index))
             paths.append(view_image_path)
