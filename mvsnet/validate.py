@@ -84,6 +84,10 @@ class MVSGenerator:
                 images = []
                 cams = []
                 for view in range(self.view_num):
+
+
+                    print("\033[1;35m[DEBUG] Loading view image: '" + str(data[2 * view]) + "'...\033[0m")
+
                     image = cv2.imread(data[2 * view])
                     cam = load_cam(open(data[2 * view + 1]), FLAGS.interval_scale)
                     cam[1, 3, 1] = (cam[1, 3, 3] - cam[1, 3, 0]) / FLAGS.max_d
@@ -91,13 +95,11 @@ class MVSGenerator:
                     images.append(image)
                     cams.append(cam)
                 
-                print(data[2 * self.view_num])
-                
                 if preprocess.MVSNET_USE_PACKED_PNG_NOT_PFM:
                     depth_image = load_depth_packed_png(data[2 * self.view_num])
                 else:
                     depth_image = load_pfm(open(data[2 * self.view_num]))
-
+                
                 if FLAGS.validate_set == 'eth3d':
                     # crop to fit the network
                     images, cams, depth_image = crop_mvs_input(
