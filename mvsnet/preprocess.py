@@ -201,6 +201,9 @@ def load_depth_packed_png(filename):
     return 32 * res
 
 def load_pfm(file):
+
+    print("\033[1;35m[DEBUG] Loading PFM image: '" + str(file) + "'...\033[0m")
+
     color = None
     width = None
     height = None
