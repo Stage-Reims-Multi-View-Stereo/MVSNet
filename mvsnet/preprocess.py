@@ -444,7 +444,7 @@ def gen_blendedmvs_path(blendedmvs_data_folder, mode='training_mvs'):
 
     # read data list
     if mode == 'training_mvs':
-        proj_list = open(os.path.join(blendedmvs_data_folder, 'BlendedMVS_training.txt')).read().splitlines()
+        proj_list = open(os.path.join(blendedmvs_data_folder, 'training_list.txt')).read().splitlines()
     elif mode == 'training_mvg':
         proj_list = open(os.path.join(blendedmvs_data_folder, 'BlendedMVG_training.txt')).read().splitlines()
     elif mode == 'validation':
