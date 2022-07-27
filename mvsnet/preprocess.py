@@ -470,7 +470,7 @@ def gen_blendedmvs_path(blendedmvs_data_folder, mode='training_mvs'):
             if total_view_num < FLAGS.view_num - 1:
                 continue
             paths = []
-            ref_image_path = os.path.join(dataset_folder, 'blended_images', '%08d_masked.%s' % (ref_idx, mvsnet_rgb_extension))
+            ref_image_path = os.path.join(dataset_folder, 'blended_images', '%08d.%s' % (ref_idx, mvsnet_rgb_extension))
 
             if MVSNET_USE_PACKED_PNG_NOT_PFM:
                 ref_depth_path = os.path.join(dataset_folder, 'rendered_depth_maps', '%08d.png' % ref_idx)
@@ -483,7 +483,7 @@ def gen_blendedmvs_path(blendedmvs_data_folder, mode='training_mvs'):
 
             for cidx in range(0, FLAGS.view_num - 1):
                 view_idx = int(cluster_info[2 * cidx + 1])
-                view_image_path = os.path.join(dataset_folder, 'blended_images', '%08d_masked.%s' % (view_idx, mvsnet_rgb_extension))
+                view_image_path = os.path.join(dataset_folder, 'blended_images', '%08d.%s' % (view_idx, mvsnet_rgb_extension))
                 view_cam_path = os.path.join(dataset_folder, 'cams', '%08d_cam.txt' % view_idx)
                 paths.append(view_image_path)
                 paths.append(view_cam_path)
