@@ -25,6 +25,7 @@ from tensorflow.python.lib.io import file_io
 FLAGS = tf.app.flags.FLAGS
 
 MVSNET_USE_PACKED_PNG_NOT_PFM = (os.environ.get("MVSNET_USE_PACKED_PNG_NOT_PFM") == "1")
+MVSNET_WRITE_PNG_WITH_PFM = (os.environ.get("MVSNET_WRITE_PNG_WITH_PFM") == "1")
 
 # MODIF: lire les .png si les .jpg ne sont pas trouvés
 # car les images du dataset de Théo sont en .png
@@ -269,6 +270,11 @@ def write_pfm(file, image, scale=1):
     file.write(image_string)
 
     file.close()
+
+    if MVSNET_WRITE_PNG_WITH_PFM:
+        amin = np.amin(image)
+        amax = np.amax(image)
+        cv2.imwrite(file.name + ".png", image)
 
 def gen_dtu_resized_path(dtu_data_folder, mode='training'):
     """ generate data paths for dtu dataset """
@@ -574,10 +580,127 @@ def gen_mvs_list(mode='training'):
         sample_list = sample_list + dtu_sample_list
     return sample_list
 
+def gen_revery_path(revery_data_folder, list_path, cams_dir):
+    """
+    Générer les inputs d'entraînement pour le dataset revery.
+    
+    Parameters
+    ----------
+    
+    revery_data_root:
+        Le répertoire qui contient chaque scène, un répertoire chacun:
+        Ex.:
+        ```
+        revery_data_root/
+            my_scene_1/
+                images/
+                    00000001.png
+                    00000002.png
+                    ...
+                rendered_depth_maps/
+                    00000001.png
+                    00000002.png
+                    ...
+            my_scene_2/
+                ...
+             ...
+            validation_list.txt
+            training_list.txt
+        ```
+        
+    list_path:
+        Fichier texte qui contient un nom de scène par ligne, qui correspond à
+        un répertoire dans `revery_data_folder`.
+        Ex.:
+        ```
+        my_scene_1
+        my_scene_1
+        ```
+        
+        On peut générer un fichier pour la validation, un pour l'entraînement
+        et un pour les tests.
+        
+    cams_dir:
+        Répertoire qui contient les fichiers de caméra et le fichier de pair.
+        Ex.:
+        ```
+        cams_dir/
+            pair.txt
+            00000001_cam.txt
+            00000002_cam.txt
+            ...
+        ```
+    
+    Returns
+    -------
+    
+    Format attendu par MVSNet (sans que je sache exactement à quoi cela correspond) :
+    
+        [
+         [image1_path1,  cam1_path, image2_path, cam2_path, ...(, depth1_path)],
+         [...],
+         ...
+        ]
+    """
+    
+    # Inspiré de gen_blendedmvs_path()
+    
+    # Lit au début les fichiers de caméra,
+    # Car ils sont communs à tout le dataset
+    # Et on considère que le fichier pair.txt se trouve aussi dans se répertoire
+    cluster_path = os.path.join(cams_dir, 'pair.txt')
+    cluster_lines = open(cluster_path).read().splitlines()
+    image_num = int(cluster_lines[0])
+    
+    # read data list
+    proj_list = open(os.path.join(revery_data_folder, list_path)).read().splitlines()
+
+    # parse all data
+    revery_input_list = []
+    for data_name in proj_list:
+
+        dataset_folder = os.path.join(revery_data_folder, data_name)
+
+        # get per-image info
+        for idx in range(0, image_num):
+
+            ref_idx = int(cluster_lines[2 * idx + 1])
+            cluster_info =  cluster_lines[2 * idx + 2].split()
+            total_view_num = int(cluster_info[0])
+            
+            if total_view_num < FLAGS.view_num - 1:
+                continue
+            
+            paths = []
+            
+            ref_image_path = os.path.join(dataset_folder, 'images', '%08d.png' % (ref_idx))
+            ref_depth_path = os.path.join(dataset_folder, 'rendered_depth_maps', '%08d.png' % ref_idx)
+            ref_cam_path   = os.path.join(cams_dir, '%08d_cam.txt' % ref_idx)
+            
+            paths.append(ref_image_path)
+            paths.append(ref_cam_path)
+
+            for cidx in range(0, FLAGS.view_num - 1):
+                view_idx = int(cluster_info[2 * cidx + 1])
+                view_image_path = os.path.join(dataset_folder, 'images', '%08d.png' % (view_idx))
+                view_cam_path = os.path.join(cams_dir, '%08d_cam.txt' % view_idx)
+                paths.append(view_image_path)
+                paths.append(view_cam_path)
+            paths.append(ref_depth_path)
+
+            revery_input_list.append(paths)
+
+    return revery_input_list
+
 # for testing
 def gen_pipeline_mvs_list(dense_folder):
     """ mvs input path list """
+    
+    # Pour éviter d'avoir deux chemins différents pour le training / testing
     image_folder = os.path.join(dense_folder, 'images')
+    if not os.path.exists(image_folder):
+        image_folder = os.path.join(dense_folder, 'blended_images')
+
     cam_folder = os.path.join(dense_folder, 'cams')
     cluster_list_path = os.path.join(dense_folder, 'pair.txt')
     cluster_list = open(cluster_list_path).read().split()
