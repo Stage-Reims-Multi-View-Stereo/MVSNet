@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # MVSNet a besoin de savoir, pour chaque caméra, les K caméras les plus "proches" avec un score donné à chacun.
 # Pour N caméras, on calcule le score de chaque caméra avec les N-1 autres caméras.
 # Les K caméras les plus proches choisies sont celles qui ont le plus haut score.

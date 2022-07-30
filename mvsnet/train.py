@@ -13,6 +13,7 @@ import math
 import argparse
 from random import randint
 import preprocess
+import pprint
 
 import cv2
 import numpy as np
@@ -147,14 +148,17 @@ class MVSGenerator:
                 cams = []
                 for view in range(self.view_num):
                     image = cv2.imread(data[2 * view])
+                    image = preprocess.revery_preprocess_images(image)
                     cam = load_cam(open(data[2 * view + 1]))
                     images.append(image)
                     cams.append(cam)
                 
-                if preprocess.MVSNET_USE_PACKED_PNG_NOT_PFM:
+                if preprocess.revery_opts.read_png_depth:
                     depth_image = preprocess.load_depth_packed_png(data[2 * self.view_num])
                 else:
                     depth_image = load_pfm(open(data[2 * self.view_num]))
+                
+                depth_image = preprocess.revery_preprocess_images(depth_image)
                 
                 # dataset specified process
                 if FLAGS.train_blendedmvs:
@@ -442,6 +446,10 @@ def main(argv=None):  # pylint: disable=unused-argument
     if FLAGS.train_eth3d:
         sample_list = gen_eth3d_path(FLAGS.eth3d_data_root, mode='training')
     if FLAGS.train_revery:
+
+        print("Revery flags:")
+        pprint.pprint(preprocess.revery_opts)
+
         sample_list = gen_revery_path(FLAGS.revery_data_root, 'training_list.txt', FLAGS.revery_cams_dir)
         
     # Shuffle

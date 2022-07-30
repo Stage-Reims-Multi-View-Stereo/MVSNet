@@ -95,7 +95,7 @@ class MVSGenerator:
                     images.append(image)
                     cams.append(cam)
                 
-                if preprocess.MVSNET_USE_PACKED_PNG_NOT_PFM:
+                if preprocess.revery_opts.read_png_depth:
                     depth_image = load_depth_packed_png(data[2 * self.view_num])
                 else:
                     depth_image = load_pfm(open(data[2 * self.view_num]))

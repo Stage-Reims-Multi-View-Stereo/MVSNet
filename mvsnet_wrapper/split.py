@@ -27,7 +27,10 @@ def generate_validation_split_files(data_dir: str, output_dir: str, validation_p
     # Liste des scènes
     scenes_uuids = [os.path.basename(os.path.normpath(x))
                     for x in glob.glob(data_dir + "/*/")]
-    
+   
+    if len(scenes_uuids) == 0:
+        raise ValueError(f"No scene found. Is there any directory inside '{data_dir}'?")
+
     if scene_count > 0:
         scenes_uuids = scenes_uuids[:scene_count] # Limit count of scenes
 
@@ -42,6 +45,12 @@ def generate_validation_split_files(data_dir: str, output_dir: str, validation_p
         f"Validation count {num_validation}/{num_scenes} ({(num_validation / num_scenes * 100):.2f}%)")
     print(f"Training count: {num_train}/{num_scenes} ({(num_train / num_scenes * 100):.2f}%)")
     print(f"Test count: {num_test}/{num_scenes} ({(num_test / num_scenes * 100):.2f}%)")
+
+    if(num_train < 0 or num_train > num_scenes or
+       num_validation < 0 or num_validation > num_scenes or
+       num_train < 0 or num_train > num_scenes):
+        raise ValueError("Invalide data split proportion")
+
     print("Splitting method: random")
 
     random.shuffle(scenes_uuids)

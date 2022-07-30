@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # MVSNet a besoin de savoir, pour chaque caméra, les K caméras les plus "proches" avec un score donné à chacun.
 # Pour N caméras, on calcule le score de chaque caméra avec les N-1 autres caméras.
 # Les K caméras les plus proches choisies sont celles qui ont le plus haut score.
@@ -113,9 +111,9 @@ def build_intrinsic_matrix(image_width, image_height, fovy) -> np.ndarray:
     '''
 
     print("*** Intrinsic matrix build parameters ***")
-    print(f"{focal_length=}")
-    print(f"{captor_width=}")
-    print(f"{captor_height=}")
+    print(f"focal_length={focal_length}")
+    print(f"captor_width={captor_width}")
+    print(f"captor_height={captor_height}")
     
     # ce n'est PAS l'aspect ratio (l'aspect ratio est w/h)
     a = image_width / captor_width
