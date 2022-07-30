@@ -12,6 +12,7 @@ import sys
 import math
 import argparse
 from random import randint
+import preprocess
 
 import cv2
 import numpy as np
@@ -36,6 +37,10 @@ tf.app.flags.DEFINE_string('eth3d_data_root', '/data/eth3d/lowres/training/undis
                            """Path to dtu dataset.""")
 tf.app.flags.DEFINE_string('dtu_data_root', '/data/dtu', 
                            """Path to dtu dataset.""")
+tf.app.flags.DEFINE_string('revery_data_root', '/data/dtu', 
+                           """Path to revery dataset.""")
+tf.app.flags.DEFINE_string('revery_cams_dir', '/data/dtu', 
+                           """Path to cameras for revery dataset.""")
 tf.app.flags.DEFINE_boolean('train_blendedmvs', False, 
                             """Whether to train.""")
 tf.app.flags.DEFINE_boolean('train_blendedmvg', False, 
@@ -43,6 +48,8 @@ tf.app.flags.DEFINE_boolean('train_blendedmvg', False,
 tf.app.flags.DEFINE_boolean('train_dtu', False, 
                             """Whether to train.""")
 tf.app.flags.DEFINE_boolean('train_eth3d', False, 
+                            """Whether to train.""")
+tf.app.flags.DEFINE_boolean('train_revery', False, 
                             """Whether to train.""")
 tf.app.flags.DEFINE_string('log_folder', '/data/tf_log',
                            """Path to store the log.""")
@@ -143,8 +150,12 @@ class MVSGenerator:
                     cam = load_cam(open(data[2 * view + 1]))
                     images.append(image)
                     cams.append(cam)
-                depth_image = load_pfm(open(data[2 * self.view_num]))
-
+                
+                if preprocess.MVSNET_USE_PACKED_PNG_NOT_PFM:
+                    depth_image = preprocess.load_depth_packed_png(data[2 * self.view_num])
+                else:
+                    depth_image = load_pfm(open(data[2 * self.view_num]))
+                
                 # dataset specified process
                 if FLAGS.train_blendedmvs:
                     # downsize by 4 to fit depth map output
@@ -188,6 +199,9 @@ class MVSGenerator:
                 cams = np.stack(cams, axis=0)
                 print('Forward pass: d_min = %f, d_max = %f.' % \
                     (cams[0][1, 3, 0], cams[0][1, 3, 0] + (FLAGS.max_d - 1) * cams[0][1, 3, 1]))
+                
+                #print("[DEBUG]", images, cams, depth_image)
+                #import pdb; pdb.set_trace()
                 yield (images, cams, depth_image) 
 
                 # return backward mvs input for GRU
@@ -427,6 +441,9 @@ def main(argv=None):  # pylint: disable=unused-argument
         sample_list = gen_dtu_resized_path(FLAGS.dtu_data_root)
     if FLAGS.train_eth3d:
         sample_list = gen_eth3d_path(FLAGS.eth3d_data_root, mode='training')
+    if FLAGS.train_revery:
+        sample_list = gen_revery_path(FLAGS.revery_data_root, 'training_list.txt', FLAGS.revery_cams_dir)
+        
     # Shuffle
     random.shuffle(sample_list)
     # Training entrance.
