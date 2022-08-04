@@ -34,11 +34,22 @@ from tools.common import Notify
 tf.app.flags.DEFINE_float('base_image_size', 8, 
                             """Base image size""")
 
+# [REVERY] import
+# NOTE: après sys.path.append("..") car le dossier 'revery' est dans le dossier parent
+from revery.preprocess_revery import gen_revery_path
+
 from preprocess import *
 from model import *
 from loss import * 
 from homography_warping import get_homographies, homography_warping
 import photometric_augmentation as photaug
+
+# [REVERY] options de cmd
+tf.app.flags.DEFINE_string('revery_data_root', '/data/revery', 
+                           """Path to ReVeRy dataset.""")
+tf.app.flags.DEFINE_boolean('train_revery', False, 
+                            """Whether to train.""")
+
 
 # paths
 tf.app.flags.DEFINE_string('blendedmvs_data_root', '/data/BlendedMVS/dataset_low_res', 
@@ -168,6 +179,18 @@ class MVSGenerator:
                     cams[0][1, 3, 3] = 937
 
                 elif FLAGS.train_eth3d:
+                    # crop images
+                    images, cams, depth_image = crop_mvs_input(
+                        images, cams, depth_image, max_w=FLAGS.max_w, max_h=FLAGS.max_h)
+                    # downsize by 4 to fit depth map output
+                    depth_image = scale_image(depth_image, scale=FLAGS.sample_scale)
+                    cams = scale_mvs_camera(cams, scale=FLAGS.sample_scale)
+                
+                # [REVERY] ajouter la branche pour le dataset revery
+                # NOTE: Les images Revery sont en 1920x1080, ce qui est grand.
+                #       Or les images eth3d sont aussi très grandes (+6000/4000 px) et de taille variable
+                #       Le code est donc copié depuis la branche train_eth3d car cela semble adapté.
+                elif FLAGS.train_revery:
                     # crop images
                     images, cams, depth_image = crop_mvs_input(
                         images, cams, depth_image, max_w=FLAGS.max_w, max_h=FLAGS.max_h)
@@ -438,6 +461,13 @@ def main(argv=None):  # pylint: disable=unused-argument
         sample_list = gen_dtu_resized_path(FLAGS.dtu_data_root)
     if FLAGS.train_eth3d:
         sample_list = gen_eth3d_path(FLAGS.eth3d_data_root, mode='training')
+    
+    # [REVERY] ajouter la branche pour revery
+    # NOTE: Le répertoire du model (avec l'option --model) doit exister,
+    #       ainsi que le sous-repértoire 3DNCCs ou GRU suivant le modèle choisit
+    if FLAGS.train_revery:
+        sample_list = gen_revery_path(FLAGS.revery_data_root, mode='training')
+        
     # Shuffle
     random.shuffle(sample_list)
     # Training entrance.
