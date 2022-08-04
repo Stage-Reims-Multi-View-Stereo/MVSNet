@@ -132,6 +132,10 @@ class MVSGenerator:
                             w_scale = width_scale
                     if h_scale > 1 or w_scale > 1:
                         print ("max_h, max_w should < W and H!")
+                        
+                        # [REVERY] Logging
+                        print("h_scale=%f; w_scale=%f" % (h_scale, w_scale))
+                        
                         exit(-1)
                     resize_scale = h_scale
                     if w_scale > h_scale:
@@ -267,6 +271,9 @@ def mvsnet_pipeline(mvs_list):
             prob_map_path = output_folder + ('/%08d_prob.pfm' % out_index)
             out_ref_image_path = output_folder + ('/%08d.jpg' % out_index)
             out_ref_cam_path = output_folder + ('/%08d.txt' % out_index)
+            
+            # [REVERY] ajouter du logging
+            print("Save", init_depth_map_path)
 
             # save output
             write_pfm(init_depth_map_path, out_init_depth_image)
