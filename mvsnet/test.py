@@ -29,6 +29,16 @@ from preprocess import *
 from model import *
 from loss import *
 
+# [REVERY] import
+# NOTE: après sys.path.append("..") car le dossier 'revery' est dans le dossier parent
+from revery.preprocess_revery import gen_revery_path
+
+# [REVERY] options de cmd
+# Si --revery est définit, on utilise la fonction de Revery pour charger le dataset
+# qui a quelques différences (shared cams/, .png et pas .jpg, fichier testing_list.txt)
+tf.app.flags.DEFINE_bool('revery', False, 
+                            """Wheter the training data is the revery dataset (different layout for images).""")
+
 # input path
 tf.app.flags.DEFINE_string('dense_folder', None, 
                            """Root path to dense folder.""")
@@ -271,7 +281,13 @@ def mvsnet_pipeline(mvs_list):
 def main(_):  # pylint: disable=unused-argument
     """ program entrance """
     # generate input path list
-    mvs_list = gen_pipeline_mvs_list(FLAGS.dense_folder)
+    
+    # [REVERY] Branche pour Revery
+    if FLAGS.revery:
+        mvs_list = gen_revery_path(FLAGS.dense_folder, 'testing')
+    else:
+        mvs_list = gen_pipeline_mvs_list(FLAGS.dense_folder)
+    
     # mvsnet inference
     mvsnet_pipeline(mvs_list)
 
