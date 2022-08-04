@@ -29,6 +29,11 @@ import matplotlib.pyplot as plt
 sys.path.append("../")
 from tools.common import Notify
 
+# [REVERY] de base ce paramètre n'apparait que dans test.py,
+# mais il est aussi utilisé ici: crop_mvs_input() l'utilise
+tf.app.flags.DEFINE_float('base_image_size', 8, 
+                            """Base image size""")
+
 from preprocess import *
 from model import *
 from loss import * 
