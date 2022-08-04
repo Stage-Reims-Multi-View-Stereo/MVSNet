@@ -210,7 +210,8 @@ def load_pfm(file):
     data = cv2.flip(data, 0)
     return data
 
-def write_pfm(file, image, scale=1):
+# [REVERY] remplacement de la valeur par défaut de scale=1 à scale=None
+def write_pfm(file, image, scale=None):
     file = file_io.FileIO(file, mode='wb')
     color = None
 
@@ -230,7 +231,19 @@ def write_pfm(file, image, scale=1):
     file.write('%d %d\n' % (image.shape[1], image.shape[0]))
 
     endian = image.dtype.byteorder
-
+    
+    # [REVERY]
+    # Ajout de la vrai scale du fichier
+    # NOTE: MVSNet n'utilise pas ce paramètre (seulement son signe), donc ça ne doit
+    #       pas changer grand chose.
+    # NOTE: Je pensais que ça afficherait mieux dans Gimp par défault, mais non.
+    #       Il faut toujours modifier les niveaux car les pixels sont tous blancs sinon.
+    if scale is None:
+        scale = np.abs(np.amax(image))
+        
+        # NOTE: abs() au cas où valeur négative,
+        #       ne devrait jamais arriver, mais pour éviter l'interprétation en big-endian
+            
     if endian == '<' or endian == '=' and sys.byteorder == 'little':
         scale = -scale
 
