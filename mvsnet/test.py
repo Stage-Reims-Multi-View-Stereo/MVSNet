@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# [REVERY]
+# Permet les accents FR dans les commentaires
+# NOTE: cela doit être la 1ière ou la 2ième ligne du fichier
+
 """
 Copyright 2019, Yao Yao, HKUST.
 Test script.
