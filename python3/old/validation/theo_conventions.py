@@ -1,0 +1,1 @@
+NUM_CAMERAS = 16
