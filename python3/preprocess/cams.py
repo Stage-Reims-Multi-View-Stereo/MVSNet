@@ -61,4 +61,5 @@ generation_settings["disparity_numerator"] = disparity_to_depth_numerator
 json.dump(
     generation_settings,
     open(os.path.join(cams_dir, "generation_settings.json"), "w"),
-    indent=4, sort_keys=True)
+    indent=4, sort_keys=True,
+    ensure_ascii=False)
