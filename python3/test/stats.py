@@ -15,10 +15,10 @@ def compute_dataset_stats(dataset_paths: list, gen_mesures: Callable[[np.ndarray
     
     Args:
         dataset_path (list):
-            La liste des scènes, chaque scène étant une liste de paires de chemins vers les depths maps.
+            La liste des scènes, chaque scène étant une liste de paires de chemins vers les depths maps (truth, inferred).
         stats_fun (function):
             Fonction prenant en arguments les deux images, et retourne un dictionnaire contenant les mesures souhaitées.
-            Doit toujours retourner les mêmes clés, sinon erreur.
+            Doit toujours retourner les mêmes clés.
     
     Returns:
         Un DataFrame ayant comme colonnes 'scene', 'cam', plus une colonne par mesure.
@@ -31,8 +31,8 @@ def compute_dataset_stats(dataset_paths: list, gen_mesures: Callable[[np.ndarray
     
     for scene_id, scene_paths in enumerate(dataset_paths):
         
-        for cam_id, (truth_path, inferred_path) in enumerate(scene_paths):
-                
+        for cam_id, depth_path_pair in enumerate(scene_paths):
+            truth_path, inferred_path = depth_path_pair
             truth_image = imread(truth_path)
             inferred_image = imread(inferred_path)
             
@@ -43,14 +43,20 @@ def compute_dataset_stats(dataset_paths: list, gen_mesures: Callable[[np.ndarray
             
             for mkey, mvalue in mesures.items():
                 
-                # Only add missing key if it is the first image of the dataset
-                if (not mkey in df_data) and (not df_data["cam"]):
-                    raise ValueError(f"Key does not appear in every mesure: '{mkey}'")
+                # if df_data["cams"] checks if it is the first iteration
+                if (not mkey in df_data):
+                    first_iter = not bool(df_data["cam"])
+                    
+                    if first_iter:
+                        # create key
+                        df_data[mkey] = []
+                    else:
+                        raise ValueError(f"Key does not appear in every mesure: '{mkey}'")
                 
-                df_data[mkey].insert(mvalue)
+                df_data[mkey].append(mvalue)
        
-            df_data["scene"].insert(scene_id)
-            df_data["cam"].insert(cam_id)
+            df_data["scene"].append(scene_id)
+            df_data["cam"].append(cam_id)
     
     df = pd.DataFrame(df_data)
     return df

@@ -16,8 +16,8 @@ def load_scene_paths(scene_dir: str):
     Extrait les paires (truth, inferred) qui contient les chemins vers les images
     de la vérité terrain et inférées.
     
-    Parameters:
-        scene_dir (str): Le chemin de la scène.
+    Args:
+        scene_dir (str): Le chemin de la scène qui doit contenir le dossier "depths_mvsnet/" et "rendered_depth_maps/".
     
     Returns:
         Une liste sous la forme suivante :
@@ -27,6 +27,7 @@ def load_scene_paths(scene_dir: str):
     """
     
     ground_truth_pathlist = glob.glob(os.path.join(scene_dir, "rendered_depth_maps", "*.pfm"))
+    ground_truth_pathlist.sort()
     scene = []
     
     if not ground_truth_pathlist:
@@ -36,7 +37,7 @@ def load_scene_paths(scene_dir: str):
         cam_id = remove_extension(os.path.basename(ground_truth_path))
         
         if not cam_id.isdigit():
-            raise ValueError("Found PFM file which the name is not a camera id: '{ground_truth_path}'")
+            raise ValueError(f"Found PFM file which the name is not a camera id: '{ground_truth_path}'")
     
         inferred_path = os.path.join(scene_dir, "depths_mvsnet", cam_id + "_init.pfm")
 
@@ -48,13 +49,16 @@ def load_scene_paths(scene_dir: str):
     return scene
 
 
-def load_dataset_paths(dataset_root: str):
+def load_dataset_paths(dataset_root: str, txt = "testing_list.txt"):
     """
-    Args:
+    Arguments:
         dataset_root (str): Le chemin répertoire qui contient 'testing_list.txt'.
+        txt (str): Le nom du fichier qui contient la liste des scènes, un nom de scène correspondant à un nom de dossier par ligne.
+        
+    Returns:
+        La liste des paires (chemin truth, chemin inferred) pour chaque caméra de chaque scène.
     """
     
-    txt = "testing_list.txt"
     txt_path = os.path.join(dataset_root, txt)
     
     if not os.path.isfile(txt_path):
@@ -65,12 +69,10 @@ def load_dataset_paths(dataset_root: str):
     dataset_paths = []
     
     for line in lines:
-    
         scene_name = line.strip()
-    
         dataset_paths.append(load_scene_paths(os.path.join(dataset_root, scene_name)))        
     
     if not dataset_paths:
-        raise ValueError("Training file '{txt}' is empty.")
+        raise ValueError(f"Training file '{txt}' is empty.")
 
     return dataset_paths
