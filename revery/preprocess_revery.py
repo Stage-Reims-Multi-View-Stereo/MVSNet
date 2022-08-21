@@ -19,7 +19,7 @@ import urllib
 from tensorflow.python.lib.io import file_io
 FLAGS = tf.app.flags.FLAGS
 
-def gen_revery_path(revery_data_folder, mode='training'):
+def gen_revery_path(revery_data_folder, cams_dir=None, mode='training'):
     """
     Base copiée depuis mvsnet/preprocess.py:gen_blendedmvs_path().
     mode: 'training', 'validation', ou 'test'.
@@ -38,6 +38,9 @@ def gen_revery_path(revery_data_folder, mode='training'):
     
     Les modifications opérées sont commentées par [REVERY].
     """
+    
+    if cams_dir is None:
+        cams_dir = os.path.join(revery_data_folder, 'cams')
 
     # read data list
     # [REVERY] modification des noms des .txt
@@ -61,7 +64,7 @@ def gen_revery_path(revery_data_folder, mode='training'):
 
         # read cluster
         # [REVERY] 'pair.txt' commun à toutes les scènes
-        cluster_path = os.path.join(revery_data_folder, 'cams', 'pair.txt')
+        cluster_path = os.path.join(cams_dir, 'pair.txt')
         cluster_lines = open(cluster_path).read().splitlines()
         image_num = int(cluster_lines[0])
 
@@ -81,7 +84,7 @@ def gen_revery_path(revery_data_folder, mode='training'):
             ref_image_path = os.path.join(dataset_folder, 'images', '%08d.png' % ref_idx)
             ref_depth_path = os.path.join(dataset_folder, 'rendered_depth_maps', '%08d.pfm' % ref_idx)
             # [REVERY] 'cams/' commun à toutes les scènes
-            ref_cam_path = os.path.join(revery_data_folder, 'cams', '%08d_cam.txt' % ref_idx)
+            ref_cam_path = os.path.join(cams_dir, '%08d_cam.txt' % ref_idx)
             paths.append(ref_image_path)
             paths.append(ref_cam_path)
 
@@ -92,7 +95,7 @@ def gen_revery_path(revery_data_folder, mode='training'):
                 # [REVERY] retirer '_masked'
                 view_image_path = os.path.join(dataset_folder, 'images', '%08d.png' % view_idx)
                 # [REVERY] 'cams/' commun à toutes les scènes
-                view_cam_path = os.path.join(revery_data_folder, 'cams', '%08d_cam.txt' % view_idx)
+                view_cam_path = os.path.join(cams_dir, '%08d_cam.txt' % view_idx)
                 paths.append(view_image_path)
                 paths.append(view_cam_path)
             
