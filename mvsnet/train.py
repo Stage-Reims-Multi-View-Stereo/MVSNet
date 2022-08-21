@@ -49,7 +49,7 @@ tf.app.flags.DEFINE_string('revery_data_root', '/data/revery',
                            """Path to ReVeRy dataset.""")
 tf.app.flags.DEFINE_boolean('train_revery', False, 
                             """Whether to train.""")
-tf.app.flags.DEFINE_boolean('revery_cams_dir', None, 
+tf.app.flags.DEFINE_string('revery_cams_dir', None, 
                             """Cameras directory, or 'cams' inside model folder by default.""")
 
 
