@@ -399,6 +399,10 @@ def train(traning_list):
 
         with tf.Session(config=config) as sess:     
             
+            # [REVERY] créer les répertoire s'il n'existent pas
+            if os.path.exists(FLAGS.log_folder): os.path.mkdir(FLAGS.log_folder)
+            if os.path.exists(FLAGS.model_folder): os.path.mkdir(FLAGS.model_folder)
+            
             # initialization
             total_step = 0
             sess.run(init_op)
