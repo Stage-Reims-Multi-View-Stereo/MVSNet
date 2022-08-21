@@ -23,7 +23,6 @@ parser.add_argument("-d", "--depth_min",         type=float,  default=   1.0    
 parser.add_argument("-i", "--depth_interval",    type=float,  default=   0.5     ,  help="Intervalle entre deux valeurs de profondeurs (définit la précision).")
 args = parser.parse_args()
 
-
 indices_cameras = config.indices_cameras
 max_neighbours = args.max_neighbours
 max_distance = args.max_distance

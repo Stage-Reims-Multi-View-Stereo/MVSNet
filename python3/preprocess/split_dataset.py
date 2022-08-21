@@ -17,7 +17,6 @@ Chaque répertoire est considéré comme un scène."""
 
 
 def write_lines(output_file_name: str, lines: list) -> None:
-
     with open(output_file_name, 'w') as output_file:
         output_file.write("\n".join(lines))
 

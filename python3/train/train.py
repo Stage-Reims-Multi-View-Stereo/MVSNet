@@ -28,7 +28,7 @@ def main():
     parser = argparse.ArgumentParser(description=DESC, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
     parser.add_argument("-m", "--model_dir", type=dir,
-                        help="Directory containing the file 'training_config.json'",
+                        help="Directory containing the file 'training_settings.json'",
                         required=True)
     parser.add_argument("-s", "--sif", type=str,
                         help="Fichier .sif qui contient l'image vers le conteneur Singularity de MVSNet",
@@ -37,32 +37,40 @@ def main():
     
     if not os.path.isfile(args.sif): raise ValueError(f"File not found: {args.sif}")
     
-    settings_json = json.load(open(os.path.join(args.model_dir, "generation_settings.json")))
+    settings_json = json.load(open(os.path.join(args.model_dir, "training_settings.json")))
     num_gpus = int(settings_json["environment"]["num_gpus"])
     
-    current_script_dir = os.path.abspath('')
-    mvsnet_src_dir = os.path.join(current_script_dir, "..", "..", "mvsnet")
+    # Faire attention à utiliser le chemin du script,
+    # Le script n'est pas forcément appelé depuis le répertoire qui le contient
+    current_script_dir = os.path.dirname(__file__)
+    mvsnet_dir = os.path.abspath(os.path.join(current_script_dir, os.pardir, os.pardir))
+    
+    
+    slurm_stdout_path = os.path.join(args.model_dir, "slurm.stdout.txt")
+    
+    # clear temp output file first
+    os.remove(slurm_stdout_path)
     
     sbatch_options = [
         f"--partition=long",
         f"--gres=gpu:{num_gpus}",
-        f"--error", os.join(args.model_dir, "slurm.stderr.txt"),
-        f"--output", os.join(args.model_dir, "slurm.stdout.txt")
+        f"--output", slurm_stdout_path
     ]
     
     # Binds:
     #   /dataset: Dataset root (read-only)
     #   /mvsnet: Source code MVSNet qui contient train.py, test.py, etc (read-only)
     #   /model: Model root (read/write)
+    # Paths dans le JSON relatifs au dossier qui contient le JSON
     singularity_binds = [
-        f"'{settings_json['dataset']['path']}':/dataset:ro",
-        f"'{mvsnet_src_dir}':/mvsnet:ro",
-        f"'{args.model_dir}':/model:rw",
+        f"{os.path.abspath(os.path.relpath(settings_json['dataset']['path'], args.model_dir))}:/dataset:ro",
+        f"{mvsnet_dir}:/mvsnet:ro",
+        f"{os.path.abspath(args.model_dir)}:/model:rw",
     ]
     
     singularity_options = [
-        "--bind", singularity_binds.join(","),
-        "--pwd", "/mvsnet",
+        "--bind", ",".join(singularity_binds),
+        "--pwd", "/mvsnet/mvsnet",
         "--no-home"
     ]
     
@@ -76,14 +84,11 @@ def main():
     # Les chemins sont dans le conteneur c'est pour ça qu'on utilise directement /model et pas le chemin donné en argument,
     # qui sera monté ici
     
-    # On rajoute 'time' pour mesurer le temps
-    
     mvsnet_command = [
-        "time", "python2", "train.py",
+        "python2", "train.py",
         "--max_w", str(int(settings_json["volume"]["max_w"])),
         "--max_h", str(int(settings_json["volume"]["max_h"])),
         "--max_d", str(int(settings_json["volume"]["max_d"])),
-        "--interval_scale", str(float(settings_json["volume"]["interval_scale"])),
         "--regularization", settings_json["regularization"],
         "--view_num", str(int(settings_json["num_views"])),
         "--log_folder", "/model/tf_log",
@@ -97,8 +102,7 @@ def main():
     if dataset_type == "revery":
         mvsnet_command += [
             "--train_revery",
-            "--revery_data_root", "/dataset",
-            "--revery_cams_dir", "/model/cams"
+z            "--revery_cams_dir", "/model/cams"
         ]
     elif dataset_type == "blendedmvs":
         mvsnet_command += [
@@ -109,12 +113,29 @@ def main():
         raise ValueError(f"Invalid dataset type: '{dataset_type}'")
     
     if settings_json["flags"]["refinement"]: mvsnet_command += ["--refinement"]
-    if settings_json["flags"]["online_augmentation"]: mvsnet_command += "--online_augmentation"
+    if settings_json["flags"]["online_augmentation"]: mvsnet_command += ["--online_augmentation"]
     
     # Le job prend en option littéralement la commande à lancer ainsi que ses arguments
-    job_options = ["singularity", "exec"] + singularity_options + mvsnet_command
+    # On rajoute 'time' pour mesurer le temps
+    # Mais pas dans le conteneur (time n'y est pas installé, fix?)
+    job_options = ["time", "singularity", "exec"] + singularity_options + [args.sif] + mvsnet_command
     
-    subp.check_call(["sbatch"] + sbatch_options + ["train.slurm.sh"] + job_options)
+    job_script_path = os.path.join(current_script_dir, "train.slurm.sh")
+    subp_command = ["sbatch"] + sbatch_options + [job_script_path] + job_options
+    
+    print("---")
+    print("Running command:")
+    print(" ".join(subp_command))
+    print("---")
+    
+    subp.check_call(subp_command)
 
+    print("Replacing Python process by 'tail -F':")
+    # execlp: Pour pouvoir utiliser la commande sans chemin absolu
+    # Permet de suivre la sortie du processus
+    # Remplace le processus Python
+    # Peut être ctrl^c sans annuler le job
+    os.execlp("tail", "tail", "-F", slurm_stdout_path)
+    
 if __name__ == "__main__":
     main()
