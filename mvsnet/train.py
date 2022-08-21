@@ -49,6 +49,8 @@ tf.app.flags.DEFINE_string('revery_data_root', '/data/revery',
                            """Path to ReVeRy dataset.""")
 tf.app.flags.DEFINE_boolean('train_revery', False, 
                             """Whether to train.""")
+tf.app.flags.DEFINE_boolean('revery_cams_dir', None, 
+                            """Cameras directory, or 'cams' inside model folder by default.""")
 
 
 # paths
@@ -466,7 +468,7 @@ def main(argv=None):  # pylint: disable=unused-argument
     # NOTE: Le répertoire du model (avec l'option --model) doit exister,
     #       ainsi que le sous-repértoire 3DNCCs ou GRU suivant le modèle choisit
     if FLAGS.train_revery:
-        sample_list = gen_revery_path(FLAGS.revery_data_root, mode='training')
+        sample_list = gen_revery_path(FLAGS.revery_data_root, cams_dir=FLAGS.revery_cams_dir, mode='training')
         
     # Shuffle
     random.shuffle(sample_list)
